@@ -1,0 +1,102 @@
+RESİM İÇİN
+
+import cv2
+import pytesseract
+import re
+
+# Tesseract yolu
+pytesseract.pytesseract.tesseract_cmd = r"C:\Users\cihan bilgisayar\Documents\tesseract\tesseract.exe"
+
+# İşlenecek görseller
+image_paths = ["toplama_ornek.png", "toplama_ornek2.png", "cikarma_ornek.png"]
+
+for image_path in image_paths:
+    print(f"\n🔍 İşlenen görsel: {image_path}")
+    image = cv2.imread(image_path)
+
+    if image is None:
+        print("❌ Görsel bulunamadı. Dosya yolu hatalı olabilir.")
+        continue
+
+    # Griye çevir ve threshold uygula
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
+
+    # OCR işlemi
+    text = pytesseract.image_to_string(thresh, config='--psm 6')
+    print("📄 OCR sonucu:", text.strip())
+
+    # Toplama ve çıkarma işlemlerini ara
+    expression_match = re.findall(r'(\d+(?:\s*[\+\-]\s*\d+)+)', text)
+
+    if expression_match:
+        for expr in expression_match:
+            try:
+                # Sadece geçerli karakterleri bırak (rakamlar, +, -)
+                cleaned_expr = re.sub(r'[^\d\+\-]', '', expr)
+                result = eval(cleaned_expr)
+                print(f"🧮 {cleaned_expr} = {result}")
+            except Exception as e:
+                print(f"❌ Hesaplama hatası: {e}")
+    else:
+        print("⚠️ Toplama veya çıkarma işlemi bulunamadı.")
+
+
+CANLI KAMERA
+
+import cv2
+import pytesseract
+import re
+
+# Tesseract yolu (Windows için, Linux/Mac için yolu ayarlayın)
+pytesseract.pytesseract.tesseract_cmd = r"C:\Users\cihan bilgisayar\Documents\tesseract\tesseract.exe"
+
+# Canlı kamerayı başlat
+cap = cv2.VideoCapture(0)  # 0, bilgisayarınızdaki varsayılan kamerayı ifade eder
+
+if not cap.isOpened():
+    print("Kamera açılamadı!")
+    exit()
+
+while True:
+    # Kamera görüntüsünü oku
+    ret, frame = cap.read()
+
+    if not ret:
+        print("Kamera görüntüsü alınamadı!")
+        break
+
+    # Görüntüyü griye çevir
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # OCR işlemi
+    text = pytesseract.image_to_string(gray, config='--psm 6')
+    print("OCR sonucu:", text.strip())
+
+    # Toplama ve çıkarma işlemleri için düzenli ifadeler
+    # Sayıları ve işlemleri bul
+    matches = re.findall(r'\d+', text)
+    operators = re.findall(r'[+-]', text)
+
+    # Toplama işlemi
+    if len(matches) >= 2 and len(operators) >= 1:
+        numbers = list(map(int, matches))
+        result = 0
+        if '+' in operators:
+            result = sum(numbers)  # Eğer '+' varsa, sayıları topla
+        elif '-' in operators:
+            result = numbers[0] - numbers[1]  # Çıkarma işlemi
+        print(f"İşlem Sonucu: {result}")
+    
+    # Görüntüyü ekranda göster
+    cv2.imshow('Canlı Kamera', frame)
+
+    # 'q' tuşuna basarak çıkış yapabilirsiniz
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# Kamerayı ve pencereleri serbest bırak
+cap.release()
+cv2.destroyAllWindows()
+
+
